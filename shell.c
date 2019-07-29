@@ -21,7 +21,7 @@
 
 char* shell_read_line(void) {
     char *line = NULL;
-    ssize_t bufsize = 0; // bufsize is given 0. getline creates a new malloc and assigns it to line
+    size_t bufsize = 0; // bufsize is given 0. getline creates a new malloc and assigns it to line
     getline(&line, &bufsize, stdin);
     return line;
 }
@@ -37,7 +37,7 @@ char* shell_read_line(void) {
 char **shell_split_lines(char *line, int *pipe_present)
 {
     int bufsize = VSH_TOK_BUFSIZE, position = 0;
-    char **tokens = malloc(bufsize * sizeof(char*));
+    char **tokens = (char**) malloc(bufsize * sizeof(char*));
     char *token;
 
     if (!tokens) {
@@ -55,7 +55,7 @@ char **shell_split_lines(char *line, int *pipe_present)
         // increase token array size
         if(position >= bufsize) {
             bufsize += VSH_TOK_BUFSIZE;
-            tokens = realloc(tokens, bufsize * sizeof(char*));
+            tokens = (char**) realloc(tokens, bufsize * sizeof(char*));
 
             if(!tokens) {
                 fprintf(stderr, "vsh: allocation error");
@@ -92,7 +92,7 @@ int vsh_launch(char **args)
         } while (!WIFEXITED(status) && !WIFSIGNALED(status));
     }
 
-    return 0;
+    return -1;
 }
 
 // function for builtin shell commands
@@ -326,6 +326,9 @@ int parse_pipe(char **args)
 
         execvp(temp[0], temp);
         perror("exec");
+        wait(NULL);
+        dup2(1, 1);
+        close(pipefd[1]);
         return 1;
     }
     //TODO: shell automatically closes after execution of commands
